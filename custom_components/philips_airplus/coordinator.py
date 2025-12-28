@@ -170,7 +170,7 @@ class PhilipsAirplusDataCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             await self._model_manager.async_load_models()
             
             # Load default model config (will be updated when we get model from device)
-            self._model_config = self._model_manager.get_model_config("AC0650/10")
+            self._model_config = self._model_manager.get_model_config("AC0651/10")
             
             # Initialize authentication
             if not await self._auth.initialize():

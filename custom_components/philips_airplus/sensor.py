@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Optional, Any
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -12,7 +12,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
-    UnitOfTime,
+    UnitOfTime, CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
@@ -30,6 +30,23 @@ _LOGGER = logging.getLogger(__name__)
 
 # Sensor descriptions
 SENSOR_DESCRIPTIONS: list[SensorEntityDescription] = [
+    # Air quality sensors
+    SensorEntityDescription(
+        key="particulate_matter_25",
+        name="PM2.5",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        device_class=SensorDeviceClass.PM25,
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        icon="mdi:air-purifier",
+    ),
+    SensorEntityDescription(
+        key="indoor_allergen_index",
+        name="IAI",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        device_class=SensorDeviceClass.AQI,
+        native_unit_of_measurement=None,
+        icon="mdi:air-purifier",
+    ),
     # Filter sensors
     SensorEntityDescription(
         key="filter_replace_percentage",
@@ -106,6 +123,13 @@ class PhilipsAirplusSensor(CoordinatorEntity, SensorEntity):
             "model": self.coordinator._model_config.get("name", "Air+ Device"),
         }
 
+    def _get_device_property(self, property_name: str) -> Any:
+        """Get a property value from the device state using the model config mapping."""
+        raw_key = self.coordinator._model_config.get("properties", {}).get(property_name)
+        if not raw_key:
+            return None
+        return self.coordinator.device_state.get(raw_key)
+
     @property
     def available(self) -> bool:
         """Return True if entity is available."""
@@ -121,7 +145,11 @@ class PhilipsAirplusSensor(CoordinatorEntity, SensorEntity):
             if self.coordinator.data:
                 filter_info = self.coordinator.data.get("filter_info", {})
                 return filter_info.get(key.replace("filter_", ""))
-        
+        else:
+            device_property = self._get_device_property(key)
+            if device_property is not None:
+                return device_property
+
         return None
 
     def _handle_coordinator_update(self) -> None:

@@ -162,7 +162,8 @@ class PhilipsAirplusDevice:
         """Extract device type."""
         return (
             self._data.get("type") or 
-            self._data.get("deviceType") or 
+            self._data.get("deviceType") or
+            self._data.get("ctn") or
             "unknown"
         )
 

@@ -48,6 +48,7 @@ PORT_CONFIG = "Config"
 # Preset modes
 PRESET_MODE_AUTO = "auto"
 PRESET_MODE_SLEEP = "sleep"
+PRESET_MODE_MEDIUM = "medium"
 PRESET_MODE_TURBO = "turbo"
 PRESET_MODE_MANUAL = "manual"
 

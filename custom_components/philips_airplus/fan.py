@@ -83,13 +83,10 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
     def is_on(self) -> bool:
         """Return True if the fan is on."""
         power = self._get_device_property(PROP_POWER_FLAG)
-        if power is not None and int(power) == 0:
+        if power is None:
             return False
-            
-        speed = self._get_device_property(PROP_FAN_SPEED)
-        if speed is None:
-            return False
-        return int(speed) > 0
+
+        return int(power) > 0
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
@@ -104,7 +101,10 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
     @property
     def speed_count(self) -> int:
         """Return the number of speeds the fan supports."""
-        return 100
+        supported_speeds = self.coordinator._model_config.get("speeds", [])
+        if not supported_speeds:
+            return 0
+        return len(supported_speeds)
 
     @property
     def percentage(self) -> Optional[int]:
@@ -112,12 +112,12 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
         speed = self._get_device_property(PROP_FAN_SPEED)
         if not self.is_on:
             return 0
-            
+
         # Get supported speeds from model config (already ordered by intensity)
         supported_speeds = self.coordinator._model_config.get("speeds", [])
         if not supported_speeds:
             return 0
-            
+
         try:
             speed_int = int(speed)
             if speed_int in supported_speeds:
@@ -127,7 +127,7 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
                 return int(round((idx + 1) / len(supported_speeds) * 100))
         except (ValueError, TypeError):
             pass
-            
+
         return 0
 
     @property
@@ -168,7 +168,7 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
         target_speed = supported_speeds[idx]
         _LOGGER.debug("Mapped percentage %s to speed value %s", percentage, target_speed)
         
-        success = await self.coordinator.set_fan_speed(target_speed)
+        success = await self.coordinator.set_fan_speed(target_speed) and await self.async_turn_on()
             
         if not success:
             _LOGGER.error("Failed to set speed to %s", target_speed)
